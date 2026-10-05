@@ -1,19 +1,66 @@
 
-# NorthStar Module 5 Live Experiments
+# NorthStar Module 5 Live Experiments — Revised
 
-This Streamlit app runs the two Module 5 classroom experiments:
+This Streamlit app contains four classroom activities.
 
-1. **Productivity and Incentives**
-   - Random assignment to Control, Quantity, or Balanced incentive arms.
-   - Students triage 8 short, deliberately simple NorthStar service cases.
-   - Outcomes: cases attempted, accuracy, errors, elapsed time, and quality-adjusted value.
+## Experiment 1 — Productivity and Incentives
 
-2. **Customer Margin Test**
-   - Random assignment to Opt-In or Opt-Out warranty default.
-   - Primary outcome: protection-plan adoption.
-   - Secondary outcome: perceived fairness/transparency.
+Students select the treatment assigned by the instructor:
 
-The **Instructor Dashboard** aggregates submissions live and allows CSV download.
+- Control
+- Quantity
+- Balanced
+
+They complete eight short service-triage decisions. The dashboard compares quantity, accuracy, and quality-adjusted value.
+
+## Experiment 2 — Customer Margin Test
+
+Students now explicitly select the version assigned by the instructor:
+
+- Control — Opt-In
+- Treatment — Opt-Out
+
+The assigned version is locked when they press **Start Experiment 2**. The dashboard compares warranty adoption and perceived fairness/transparency.
+
+## Color Test — Product Color Preference
+
+Students select among:
+
+- White
+- Black
+- Silver
+- Navy Blue
+
+The appliance preview now changes immediately when the selected color changes. Raw HTML should no longer appear because the preview is rendered with `st.html`.
+
+Students also report purchase likelihood and whether they would pay CAD 50 more for the preferred finish.
+
+## Experiment 4 — Marketing Language and Loss Aversion
+
+Students select one of two instructor-assigned versions:
+
+- Control — Version A: gain frame ("save CAD 180")
+- Treatment — Version B: loss frame ("lose CAD 180")
+
+Both versions describe the same estimated annual energy-cost difference. Students then choose between a Standard and EcoSmart appliance.
+
+The dashboard compares the EcoSmart choice rate across gain and loss framing.
+
+This activity is best described as a **framing / loss-aversion experiment** rather than a generic risk-aversion experiment.
+
+## Instructor Dashboard
+
+Open the **Instructor Results & Data** tab.
+
+Default code:
+
+`northstar`
+
+The dashboard shows live summaries and lets you download each experiment as CSV.
+
+The underlying data are also stored locally in:
+
+`northstar_experiments.db`
 
 ## Run locally
 
@@ -22,104 +69,8 @@ pip install -r requirements.txt
 streamlit run module5_live_experiments.py
 ```
 
-Then open the local URL Streamlit provides.
+## Suggested class splits for 68 students
 
-## Instructor code
-
-The default dashboard code is:
-
-`northstar`
-
-For class use, set your own code before launching:
-
-macOS/Linux:
-```bash
-export INSTRUCTOR_CODE="your-code"
-streamlit run module5_live_experiments.py
-```
-
-Windows PowerShell:
-```powershell
-$env:INSTRUCTOR_CODE="your-code"
-streamlit run module5_live_experiments.py
-```
-
-## Suggested classroom timing
-
-### Experiment 1
-- 1 minute: explain the four triage rules
-- 90 seconds–2 minutes: students work through 8 cases
-- 1 minute: submit
-- 5–7 minutes: reveal and debrief
-
-Do **not** reveal the scoring logic across arms before the activity beyond what each student sees on their own screen.
-
-### Experiment 2
-- 1 minute: ask students to make the purchase decision silently
-- 1 minute: submit
-- 3–5 minutes: reveal opt-in vs opt-out adoption rates
-- Debrief: default effects, inertia, implied recommendation, trust, ethics
-
-## Data
-
-Results are stored in a local SQLite database named:
-
-`northstar_experiments.db`
-
-The database is created automatically in the same folder as the app.
-
-For a one-class session, local SQLite is adequate. If you deploy to a cloud host that can restart or use ephemeral storage, download the CSVs after class or connect the app to a persistent database.
-
-
-## Turning Experiment 2 into a true margin test
-
-The dashboard lets the instructor enter:
-- net contribution per protection plan; and
-- the customer volume to which the intervention might be scaled.
-
-It then translates the observed adoption-rate difference into an estimated incremental contribution margin. The app explicitly notes that this first-pass estimate does not subtract possible complaint, cancellation, regulatory, or trust costs.
-
-
-## Manual treatment assignment for Experiment 1
-
-Experiment 1 now displays all three treatment options:
-- Control
-- Quantity
-- Balanced
-
-The instructor tells students which treatment to select before they start. A simple approach is to split the class into roughly equal thirds.
-
-The treatment selection locks once the student starts the experiment.
-
-## Where to see the data
-
-Open the **Instructor Results & Data** tab and enter the instructor code.
-
-Default code: `northstar`
-
-The dashboard shows live summaries and provides buttons to download the raw data as CSV.
-
-The underlying submissions are also stored in:
-`northstar_experiments.db`
-
-This database file is created in the same folder where the Streamlit app is running.
-
-
-## Experiment 3: Product Color Preference
-
-Students see the same NorthStar appliance mock-up in four finishes:
-- White
-- Black
-- Silver
-- Navy Blue
-
-The order is randomized across participants to reduce position bias.
-
-Students report:
-- preferred color;
-- purchase likelihood (1–5); and
-- whether they would pay CAD 50 more for their preferred color.
-
-The Instructor Results & Data tab reports class choice shares, average purchase likelihood, and the share willing to pay the premium by selected color.
-
-This is mainly a **preference test**, rather than a clean causal experiment. It is useful for design and marketing decisions. To turn it into a causal experiment, the instructor could later randomize a feature such as the color label, price premium, or marketing message.
+- Experiment 1: about 23 Control / 23 Quantity / 22 Balanced
+- Experiment 2: about 34 Control / 34 Treatment
+- Experiment 4: about 34 Version A / 34 Version B
