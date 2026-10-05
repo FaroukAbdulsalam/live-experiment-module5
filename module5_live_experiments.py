@@ -58,21 +58,14 @@ exp1_arm = ["Control", "Quantity", "Balanced"][stable_arm(participant_id + "exp1
 exp2_arm = ["Opt-In", "Opt-Out"][stable_arm(participant_id + "exp2", 2)]
 
 CASES = [
-    ("A customer says the appliance works normally, but the mobile app will not pair with Wi-Fi.", "Remote fix"),
-    ("The door will not latch properly. There is no smoke, smell, or visible electrical issue.", "Technician visit"),
-    ("The customer reports sparks from the appliance when it is switched on.", "Safety escalation"),
-    ("The appliance was delivered yesterday and has never powered on, even after basic checks.", "Replace"),
-    ("A filter-maintenance alert appears after three months of use; the unit otherwise works normally.", "Remote fix"),
-    ("The drum makes a loud grinding noise during operation, but there are no safety symptoms.", "Technician visit"),
-    ("The same drainage fault has returned after two prior technician repairs.", "Replace"),
-    ("A burning smell appears whenever the heating cycle begins.", "Safety escalation"),
-    ("The phone app shows the appliance as offline, but the appliance itself operates normally.", "Remote fix"),
-    ("Water is leaking from an internal hose. There are no sparks, shocks, or burning smells.", "Technician visit"),
-    ("The unit becomes unusually hot and repeatedly shuts itself down.", "Safety escalation"),
-    ("The control panel remains unresponsive after a reset. The unit is 18 months old and shows no safety symptoms.", "Technician visit"),
-    ("The display language changed after a software update; all appliance functions still work.", "Remote fix"),
-    ("A compressor fault has returned after two previous repairs for the same problem.", "Replace"),
-    ("The customer receives a setup error while registering the appliance account; the machine itself works.", "Remote fix"),
+    ("The appliance works, but the customer cannot connect the mobile app to Wi-Fi.", "Remote fix"),
+    ("The door will not close properly. There is no smoke, smell, or electrical danger.", "Technician visit"),
+    ("The customer sees sparks when the appliance is switched on.", "Safety escalation"),
+    ("The appliance was delivered today and does not power on at all.", "Replace"),
+    ("A software update caused the display language to change, but the appliance still works.", "Remote fix"),
+    ("The appliance makes a loud grinding noise during use, but there is no safety issue.", "Technician visit"),
+    ("The same fault has returned after two previous technician repairs.", "Replace"),
+    ("A burning smell appears when the heating cycle starts.", "Safety escalation"),
 ]
 
 ACTIONS = ["—", "Remote fix", "Technician visit", "Replace", "Safety escalation"]
@@ -84,13 +77,15 @@ tab1, tab2, tab3 = st.tabs(["Experiment 1", "Experiment 2", "Instructor Dashboar
 
 with tab1:
     st.header("Experiment 1: Productivity and Incentives")
-    st.write("**Question:** Can NorthStar reduce service cost per resolved customer problem without reducing quality?")
+    st.write("**Question:** What happens when employees are rewarded for speed versus speed + accuracy?")
+    st.caption("Everyone gets the same 8 customer cases. The only thing that changes is the incentive.")
 
     st.info(
-        "Triage rule: Remote fix = setup/software/maintenance issue; "
-        "Technician visit = repair needed but no safety issue; "
-        "Replace = dead-on-arrival or same fault after two prior repairs; "
-        "Safety escalation = smoke, sparks, burning smell, shock, or overheating."
+        "Use only these four rules:\n"
+        "1) App/software/setup problem → Remote fix\n"
+        "2) Physical repair needed, but no danger → Technician visit\n"
+        "3) Dead on arrival OR same fault after two repairs → Replace\n"
+        "4) Sparks, smoke, burning smell, shock, or overheating → Safety escalation"
     )
 
     if exp1_arm == "Control":
@@ -170,11 +165,11 @@ with tab1:
         c1.metric("Cases attempted", r["attempted"])
         c2.metric("Accuracy", f'{r["accuracy"]:.0%}')
         c3.metric("Quality-adjusted value", f'{r["quality_value"]:.0f}')
-        with st.expander("Why this matters"):
+        with st.expander("What are we testing?"):
             st.write(
-                "A quantity incentive may increase throughput, but NorthStar ultimately cares about "
-                "correctly resolved customer problems, rework, customer experience, and cost. "
-                "The class comparison will show whether the incentive changed the metric or the underlying value."
+                "If people are rewarded only for finishing more cases, they may work faster but make more mistakes. "
+                "If rewards also depend on accuracy, they may complete fewer cases but create more value. "
+                "NorthStar should reward the outcome it truly cares about—not just the easiest metric to count."
             )
 
 with tab2:

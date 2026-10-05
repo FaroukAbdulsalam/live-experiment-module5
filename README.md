@@ -5,7 +5,7 @@ This Streamlit app runs the two Module 5 classroom experiments:
 
 1. **Productivity and Incentives**
    - Random assignment to Control, Quantity, or Balanced incentive arms.
-   - Students triage NorthStar service cases.
+   - Students triage 8 short, deliberately simple NorthStar service cases.
    - Outcomes: cases attempted, accuracy, errors, elapsed time, and quality-adjusted value.
 
 2. **Customer Margin Test**
@@ -47,8 +47,8 @@ streamlit run module5_live_experiments.py
 ## Suggested classroom timing
 
 ### Experiment 1
-- 1 minute: explain the triage rules
-- 2 minutes: students work
+- 1 minute: explain the four triage rules
+- 90 seconds–2 minutes: students work through 8 cases
 - 1 minute: submit
 - 5–7 minutes: reveal and debrief
 
