@@ -5,6 +5,7 @@ import sqlite3
 import uuid
 import hashlib
 import os
+import random
 from datetime import datetime, timezone
 
 st.set_page_config(page_title="NorthStar Live Experiments", page_icon="🧪", layout="centered")
@@ -37,6 +38,15 @@ def get_conn():
             trust_rating INTEGER
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS exp3 (
+            participant_id TEXT PRIMARY KEY,
+            submitted_at TEXT,
+            preferred_color TEXT,
+            purchase_likelihood INTEGER,
+            would_pay_premium INTEGER
+        )
+    """)
     conn.commit()
     return conn
 
@@ -50,11 +60,14 @@ if "exp1_start" not in st.session_state:
     st.session_state.exp1_start = None
 if "exp1_submitted" not in st.session_state:
     st.session_state.exp1_submitted = False
+if "exp1_arm" not in st.session_state:
+    st.session_state.exp1_arm = None
 if "exp2_submitted" not in st.session_state:
     st.session_state.exp2_submitted = False
+if "exp3_submitted" not in st.session_state:
+    st.session_state.exp3_submitted = False
 
 participant_id = st.session_state.participant_id
-exp1_arm = ["Control", "Quantity", "Balanced"][stable_arm(participant_id + "exp1", 3)]
 exp2_arm = ["Opt-In", "Opt-Out"][stable_arm(participant_id + "exp2", 2)]
 
 CASES = [
@@ -73,7 +86,7 @@ ACTIONS = ["—", "Remote fix", "Technician visit", "Replace", "Safety escalatio
 st.title("NorthStar Live Experiments")
 st.caption(f"Anonymous participant code: {participant_id}")
 
-tab1, tab2, tab3 = st.tabs(["Experiment 1", "Experiment 2", "Instructor Dashboard"])
+tab1, tab2, tab3, tab4 = st.tabs(["Experiment 1", "Experiment 2", "Experiment 3", "Instructor Results & Data"])
 
 with tab1:
     st.header("Experiment 1: Productivity and Incentives")
@@ -88,18 +101,33 @@ with tab1:
         "4) Sparks, smoke, burning smell, shock, or overheating → Safety escalation"
     )
 
+    st.subheader("Select the treatment your instructor assigned to you")
+    st.caption("Your instructor will tell you which treatment to choose. Please do not choose a different one.")
+
+    treatment_choice = st.radio(
+        "Assigned treatment",
+        ["Control", "Quantity", "Balanced"],
+        index=None,
+        horizontal=True,
+        disabled=st.session_state.exp1_start is not None or st.session_state.exp1_submitted,
+    )
+
+    if treatment_choice and st.session_state.exp1_start is None and not st.session_state.exp1_submitted:
+        st.session_state.exp1_arm = treatment_choice
+
+    exp1_arm = st.session_state.exp1_arm
+
     if exp1_arm == "Control":
-        st.subheader("Your incentive")
-        st.write("**Complete the task carefully.** Your objective is to make sound service decisions.")
+        st.info("**CONTROL:** Complete the task carefully. Your objective is to make sound service decisions.")
     elif exp1_arm == "Quantity":
-        st.subheader("Your incentive")
-        st.write("**You earn 1 point for every case you complete.** Try to process as many cases as possible.")
-    else:
-        st.subheader("Your incentive")
-        st.write("**You earn 2 points for each correct case and lose 2 points for each incorrect case.** Balance speed and accuracy.")
+        st.info("**QUANTITY:** You earn 1 point for every case you complete. Try to process as many cases as possible.")
+    elif exp1_arm == "Balanced":
+        st.info("**BALANCED:** You earn 2 points for each correct case and lose 2 points for each incorrect case. Balance speed and accuracy.")
 
     if st.session_state.exp1_start is None and not st.session_state.exp1_submitted:
-        if st.button("Start Experiment 1", type="primary"):
+        if exp1_arm is None:
+            st.warning("Select the treatment assigned by your instructor before starting.")
+        elif st.button("Start Experiment 1", type="primary"):
             st.session_state.exp1_start = datetime.now(timezone.utc).isoformat()
             st.rerun()
 
@@ -224,14 +252,113 @@ with tab2:
         st.success("Experiment 2 submitted. Please do not discuss your screen with classmates until the instructor reveals the results.")
         st.metric("Your choice", "Protection plan" if st.session_state.exp2_choice else "No protection plan")
 
+
 with tab3:
-    st.header("Instructor Dashboard")
+    st.header("Experiment 3: Product Color Preference")
+    st.write("**Question:** Which appliance finish would customers prefer if price and features were identical?")
+    st.caption(
+        "This is primarily a preference test for the marketing and design teams. "
+        "The order of the four options is randomized across participants to reduce position bias."
+    )
+
+    colors = [
+        ("White", "#F2F2F2", "#555555"),
+        ("Black", "#222222", "#F5F5F5"),
+        ("Silver", "#B7BCC2", "#333333"),
+        ("Navy Blue", "#1F3557", "#F5F5F5"),
+    ]
+
+    rng = random.Random(int(hashlib.sha256((participant_id + "exp3").encode()).hexdigest(), 16))
+    ordered_colors = colors.copy()
+    rng.shuffle(ordered_colors)
+
+    cards = '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:8px 0 16px 0;">'
+    for name, fill, txt in ordered_colors:
+        cards += f"""
+        <div style="text-align:center;">
+          <div style="height:155px;border:1px solid #888;border-radius:16px;background:{fill};position:relative;box-shadow:inset 0 0 0 2px rgba(255,255,255,.18);">
+            <div style="position:absolute;top:12px;left:12px;right:12px;height:18px;border-radius:5px;background:rgba(255,255,255,.20);"></div>
+            <div style="position:absolute;width:82px;height:82px;border-radius:50%;border:8px solid rgba(255,255,255,.35);left:50%;top:50%;transform:translate(-50%,-36%);background:rgba(0,0,0,.12);"></div>
+            <div style="position:absolute;bottom:9px;left:0;right:0;font-size:13px;font-weight:600;color:{txt};">{name}</div>
+          </div>
+        </div>
+        """
+    cards += "</div>"
+    st.markdown(cards, unsafe_allow_html=True)
+
+    with st.form("exp3_form"):
+        preferred = st.radio(
+            "If all four appliances had the same price and features, which color would you choose?",
+            [x[0] for x in ordered_colors],
+            index=None,
+            horizontal=True
+        )
+        likelihood = st.slider(
+            "How likely would you be to buy your selected color?",
+            min_value=1,
+            max_value=5,
+            value=3,
+            help="1 = very unlikely; 5 = very likely"
+        )
+        premium = st.radio(
+            "Would you pay CAD 50 more to get your preferred color rather than your second choice?",
+            ["No", "Yes"],
+            horizontal=True
+        )
+        submit3 = st.form_submit_button("Submit Experiment 3", type="primary")
+
+    if submit3 and not st.session_state.exp3_submitted:
+        if preferred is None:
+            st.error("Please choose one appliance color before submitting.")
+        else:
+            conn = get_conn()
+            conn.execute(
+                "INSERT OR REPLACE INTO exp3 VALUES (?,?,?,?,?)",
+                (
+                    participant_id,
+                    datetime.now(timezone.utc).isoformat(),
+                    preferred,
+                    int(likelihood),
+                    1 if premium == "Yes" else 0,
+                )
+            )
+            conn.commit()
+            conn.close()
+            st.session_state.exp3_submitted = True
+            st.session_state.exp3_preferred = preferred
+            st.rerun()
+
+    if st.session_state.exp3_submitted:
+        st.success(f"Experiment 3 submitted. You selected {st.session_state.exp3_preferred}.")
+        st.write(
+            "The class results will show the design team which finish is most preferred "
+            "and whether customers appear willing to pay for that preference."
+        )
+
+with tab4:
+    st.header("Instructor Results & Data")
     code = st.text_input("Instructor access code", type="password")
     if code == INSTRUCTOR_CODE:
+        st.success("Instructor access granted.")
+        st.write(
+            "**Where the data are:** Results appear below as soon as students submit. "
+            "Use the download buttons to save the raw student-level data as CSV."
+        )
+        st.caption(
+            "The app also stores all submissions in `northstar_experiments.db` in the same folder where the Streamlit app is running."
+        )
+
         conn = get_conn()
         e1 = pd.read_sql_query("SELECT * FROM exp1", conn)
         e2 = pd.read_sql_query("SELECT * FROM exp2", conn)
+        e3 = pd.read_sql_query("SELECT * FROM exp3", conn)
         conn.close()
+
+        st.subheader("Suggested Experiment 1 assignment")
+        st.write(
+            "For a quick classroom split, tell approximately one-third of students to select **Control**, "
+            "one-third **Quantity**, and one-third **Balanced**. Keep the groups as similar in size as possible."
+        )
 
         st.subheader("Experiment 1 results")
         if e1.empty:
@@ -307,6 +434,30 @@ with tab3:
                 "Download Experiment 2 CSV",
                 e2.to_csv(index=False).encode("utf-8"),
                 "experiment2_results.csv",
+                "text/csv"
+            )
+
+        st.subheader("Experiment 3 results")
+        if e3.empty:
+            st.info("No Experiment 3 submissions yet.")
+        else:
+            summary3 = (
+                e3.groupby("preferred_color", as_index=False)
+                  .agg(
+                      students=("participant_id", "count"),
+                      avg_purchase_likelihood=("purchase_likelihood", "mean"),
+                      premium_share=("would_pay_premium", "mean"),
+                  )
+            )
+            total3 = summary3["students"].sum()
+            summary3["choice_share"] = summary3["students"] / total3
+            summary3["choice_share"] = summary3["choice_share"].map(lambda x: f"{x:.1%}")
+            summary3["premium_share"] = summary3["premium_share"].map(lambda x: f"{x:.1%}")
+            st.dataframe(summary3, use_container_width=True, hide_index=True)
+            st.download_button(
+                "Download Experiment 3 CSV",
+                e3.to_csv(index=False).encode("utf-8"),
+                "experiment3_results.csv",
                 "text/csv"
             )
 

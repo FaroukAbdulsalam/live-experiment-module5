@@ -78,3 +78,48 @@ The dashboard lets the instructor enter:
 - the customer volume to which the intervention might be scaled.
 
 It then translates the observed adoption-rate difference into an estimated incremental contribution margin. The app explicitly notes that this first-pass estimate does not subtract possible complaint, cancellation, regulatory, or trust costs.
+
+
+## Manual treatment assignment for Experiment 1
+
+Experiment 1 now displays all three treatment options:
+- Control
+- Quantity
+- Balanced
+
+The instructor tells students which treatment to select before they start. A simple approach is to split the class into roughly equal thirds.
+
+The treatment selection locks once the student starts the experiment.
+
+## Where to see the data
+
+Open the **Instructor Results & Data** tab and enter the instructor code.
+
+Default code: `northstar`
+
+The dashboard shows live summaries and provides buttons to download the raw data as CSV.
+
+The underlying submissions are also stored in:
+`northstar_experiments.db`
+
+This database file is created in the same folder where the Streamlit app is running.
+
+
+## Experiment 3: Product Color Preference
+
+Students see the same NorthStar appliance mock-up in four finishes:
+- White
+- Black
+- Silver
+- Navy Blue
+
+The order is randomized across participants to reduce position bias.
+
+Students report:
+- preferred color;
+- purchase likelihood (1–5); and
+- whether they would pay CAD 50 more for their preferred color.
+
+The Instructor Results & Data tab reports class choice shares, average purchase likelihood, and the share willing to pay the premium by selected color.
+
+This is mainly a **preference test**, rather than a clean causal experiment. It is useful for design and marketing decisions. To turn it into a causal experiment, the instructor could later randomize a feature such as the color label, price premium, or marketing message.
