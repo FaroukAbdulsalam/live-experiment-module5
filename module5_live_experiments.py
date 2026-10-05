@@ -13,52 +13,48 @@ st.set_page_config(page_title="NorthStar Live Experiments", page_icon="🧪", la
 DB_PATH = "northstar_experiments.db"
 INSTRUCTOR_CODE = os.environ.get("INSTRUCTOR_CODE", "northstar")
 
+TABLE_SCHEMAS = {
+    "exp1": [("participant_id", "TEXT PRIMARY KEY"), ("submitted_at", "TEXT"), ("arm", "TEXT"),
+             ("attempted", "INTEGER"), ("correct", "INTEGER"), ("incorrect", "INTEGER"),
+             ("accuracy", "REAL"), ("quality_value", "REAL"), ("elapsed_seconds", "REAL")],
+    "exp2": [("participant_id", "TEXT PRIMARY KEY"), ("submitted_at", "TEXT"), ("arm", "TEXT"),
+             ("chose_plan", "INTEGER"), ("trust_rating", "INTEGER")],
+    "exp3": [("participant_id", "TEXT PRIMARY KEY"), ("submitted_at", "TEXT"), ("preferred_color", "TEXT"),
+             ("purchase_likelihood", "INTEGER"), ("would_pay_premium", "INTEGER")],
+    "exp4": [("participant_id", "TEXT PRIMARY KEY"), ("submitted_at", "TEXT"), ("arm", "TEXT"),
+             ("chose_upgrade", "INTEGER"), ("persuasiveness", "INTEGER"), ("chose_risky", "INTEGER")],
+}
+
 def get_conn():
     conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL;")
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS exp1 (
-            participant_id TEXT PRIMARY KEY,
-            submitted_at TEXT,
-            arm TEXT,
-            attempted INTEGER,
-            correct INTEGER,
-            incorrect INTEGER,
-            accuracy REAL,
-            quality_value REAL,
-            elapsed_seconds REAL
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS exp2 (
-            participant_id TEXT PRIMARY KEY,
-            submitted_at TEXT,
-            arm TEXT,
-            chose_plan INTEGER,
-            trust_rating INTEGER
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS exp3 (
-            participant_id TEXT PRIMARY KEY,
-            submitted_at TEXT,
-            preferred_color TEXT,
-            purchase_likelihood INTEGER,
-            would_pay_premium INTEGER
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS exp4 (
-            participant_id TEXT PRIMARY KEY,
-            submitted_at TEXT,
-            arm TEXT,
-            chose_upgrade INTEGER,
-            persuasiveness INTEGER,
-            chose_risky INTEGER
-        )
-    """)
+    for table, cols in TABLE_SCHEMAS.items():
+        existing = [r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+        expected = [c[0] for c in cols]
+        if existing and existing != expected:
+            # A table left over from an older version of the app has a different layout.
+            # Archive it (data kept) rather than failing every insert.
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+            conn.execute(f"ALTER TABLE {table} RENAME TO {table}_archived_{stamp}")
+        col_sql = ", ".join(f"{name} {ctype}" for name, ctype in cols)
+        conn.execute(f"CREATE TABLE IF NOT EXISTS {table} ({col_sql})")
     conn.commit()
     return conn
+
+def save_row(table, values):
+    """Insert one participant's row; returns True on success, shows an error otherwise."""
+    cols = [c[0] for c in TABLE_SCHEMAS[table]]
+    sql = (f"INSERT OR REPLACE INTO {table} ({', '.join(cols)}) "
+           f"VALUES ({', '.join('?' * len(cols))})")
+    try:
+        conn = get_conn()
+        conn.execute(sql, values)
+        conn.commit()
+        conn.close()
+        return True
+    except sqlite3.Error as e:
+        st.error(f"Your response could not be saved ({e}). Please tell your instructor.")
+        return False
 
 def stable_arm(participant_id, n):
     h = int(hashlib.sha256(participant_id.encode()).hexdigest(), 16)
@@ -196,10 +192,7 @@ with tab1:
             start_dt = datetime.fromisoformat(st.session_state.exp1_start)
             elapsed = (datetime.now(timezone.utc) - start_dt).total_seconds()
 
-            conn = get_conn()
-            conn.execute(
-                "INSERT OR REPLACE INTO exp1 VALUES (?,?,?,?,?,?,?,?,?)",
-                (
+            if not save_row("exp1", (
                     participant_id,
                     datetime.now(timezone.utc).isoformat(),
                     exp1_arm,
@@ -209,10 +202,8 @@ with tab1:
                     accuracy,
                     quality_value,
                     elapsed,
-                ),
-            )
-            conn.commit()
-            conn.close()
+                )):
+                st.stop()
             st.session_state.exp1_submitted = True
             st.session_state.exp1_result = {
                 "attempted": attempted,
@@ -291,19 +282,14 @@ with tab2:
             submitted2 = st.form_submit_button("Submit Experiment 2", type="primary")
 
         if submitted2:
-            conn = get_conn()
-            conn.execute(
-                "INSERT OR REPLACE INTO exp2 VALUES (?,?,?,?,?)",
-                (
+            if not save_row("exp2", (
                     participant_id,
                     datetime.now(timezone.utc).isoformat(),
                     exp2_arm,
                     int(chose_plan),
                     int(trust),
-                ),
-            )
-            conn.commit()
-            conn.close()
+                )):
+                st.stop()
             st.session_state.exp2_submitted = True
             st.session_state.exp2_choice = int(chose_plan)
             st.session_state.exp2_trust = int(trust)
@@ -416,19 +402,14 @@ with tab3:
         if preferred is None:
             st.error("Choose one appliance color above before submitting.")
         else:
-            conn = get_conn()
-            conn.execute(
-                "INSERT OR REPLACE INTO exp3 VALUES (?,?,?,?,?)",
-                (
+            if not save_row("exp3", (
                     participant_id,
                     datetime.now(timezone.utc).isoformat(),
                     preferred,
                     int(likelihood),
                     1 if premium == "Yes" else 0,
-                )
-            )
-            conn.commit()
-            conn.close()
+                )):
+                st.stop()
             st.session_state.exp3_submitted = True
             st.session_state.exp3_preferred = preferred
             st.rerun()
@@ -524,20 +505,15 @@ with tab4:
             if upgrade is None or plan is None:
                 st.error("Answer both decisions before submitting.")
             else:
-                conn = get_conn()
-                conn.execute(
-                    "INSERT OR REPLACE INTO exp4 VALUES (?,?,?,?,?,?)",
-                    (
+                if not save_row("exp4", (
                         participant_id,
                         datetime.now(timezone.utc).isoformat(),
                         exp4_arm,
                         int(upgrade.startswith("EcoSeries")),
                         int(persuasive),
                         int(plan == plan_b),
-                    ),
-                )
-                conn.commit()
-                conn.close()
+                    )):
+                    st.stop()
                 st.session_state.exp4_submitted = True
                 st.rerun()
 

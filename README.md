@@ -145,3 +145,7 @@ Same facts, different wording. Group X sees gain frames; Group Y sees loss frame
 Suggested timing: 1 minute to choose, 3–5 minutes to reveal and debrief. The dashboard reports Loss-minus-Gain effects with 95% confidence intervals, plus debrief notes.
 
 Use a different splitting rule than in Experiment 2 (e.g., seat rows vs. birth month) so the same students are not always treated together.
+
+## Database upgrades
+
+On startup the app checks each table's columns. If a table was created by an older version with a different layout, it is renamed to `<table>_archived_<timestamp>` (data kept) and a fresh table is created. This prevents insert errors after updating the app on a host that kept the old `northstar_experiments.db`. Do not commit `northstar_experiments.db` to your repository; add it to `.gitignore`.
