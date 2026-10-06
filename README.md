@@ -1,95 +1,151 @@
-# NorthStar Module 5 Live Activities (v2)
 
-A Streamlit app for four live classroom experiments in managerial economics, with a prediction step
-before each reveal and a projector view for the debrief.
+# NorthStar Module 5 Live Experiments
 
-| Student tab | What students see | What it tests | Groups (assigned by the app) |
-|---|---|---|---|
-| Activity 1 | Two quick decisions | Gain vs. loss framing | Gain frame / Loss frame |
-| Activity 2 | Service desk | Incentives and productivity | Control / Quantity / Balanced |
-| Activity 3 | Checkout | Defaults and warranty margin | Opt-In / Opt-Out / Active choice |
-| Activity 4 | Choose a finish | Social proof | No badge / Bestseller badge on Navy Blue |
+This Streamlit app runs the two Module 5 classroom experiments:
 
-Student-facing titles are deliberately neutral so they don't reveal the hypothesis. Framing runs first,
-before students have seen other manipulations.
+1. **Productivity and Incentives**
+   - Random assignment to Control, Quantity, or Balanced incentive arms.
+   - Students triage 8 short, deliberately simple NorthStar service cases.
+   - Outcomes: cases attempted, accuracy, errors, elapsed time, and quality-adjusted value.
 
-## What changed from v1
+2. **Customer Margin Test**
+   - Instructor assigns students to Group A (Opt-In, control) or Group B (Opt-Out, treatment) warranty default.
+   - Primary outcome: protection-plan adoption.
+   - Secondary outcome: perceived fairness/transparency.
 
-- **Neutral titles** on all student screens; the research question appears only on the instructor side.
-- **Student code at entry.** The code is hashed (with a private salt) into an anonymous ID. Reloading the page
-  and re-entering the same code resumes where the student left off; each activity accepts one submission only.
-- **App-assigned balanced groups.** Each student is assigned to the group with the fewest members so far
-  (random tie-break). Students never choose or see a group name.
-- **Persistent storage** via any Postgres database (`DATABASE_URL`). Without it the app uses a local SQLite file,
-  which Streamlit Community Cloud wipes on reboot; the instructor tab warns you when that's the case.
-- **Service desk reworked:** 20 cases (in a random order per student), a 90-second on-screen countdown, five rules
-  including a precedence rule, and trap cases that punish rushing. Quantity and Balanced students compete on a
-  leaderboard (anonymous animal names). Control gets a neutral instruction. Submissions more than 20 s past the
-  limit are flagged and excluded by default.
-- **Checkout:** new **Active choice** arm (forced yes/no), plus a 30-day cancellation question so margin is
-  computed net of cancellations.
-- **Choose a finish** is now a causal test: half the class sees a Bestseller badge on Navy Blue.
-- **Framing:** decision 2 uses 1,200 distributor accounts instead of the classic 600 people, so students who know
-  the Asian disease problem are less likely to recognise it.
-- **Predictions:** after each activity you explain the design and open predictions; students predict each group's
-  outcome; the projector view shows the class prediction next to the actual result.
-- **Sessions and pooling:** every row is tagged with a session code. Results can be shown for this session or
-  pooled across all sessions.
-- **Consent notice** at entry.
-- Tables whose layout doesn't match this version are archived (renamed, data kept), never deleted.
+3. **Product Color Preference** (see below).
 
-## Running a class
+4. **Gains vs. Losses (framing)**
+   - Instructor assigns students to Group X (Gain frame) or Group Y (Loss frame).
+   - Outcomes: EcoSeries upgrade rate, message persuasiveness, and share choosing the risky recovery plan.
 
-1. Before class: in the Instructor tab (*Class control*), set the session code, e.g. `2027S-sec1`.
-2. Students open the app, enter their student number, tick the notice, and do Activity 1.
-3. When everyone has submitted (progress is shown in *Class control*), explain the design, then switch on
-   **Predictions open** for that activity. Students predict in the Predictions tab
-   (they press "Check for open predictions").
-4. In *Projector*, select the activity. The class prediction shows first; switch on **Reveal results** to add the
-   actual outcome. Use *Detailed results* for effects with confidence intervals, the margin calculator and debrief notes.
-5. Repeat for Activities 2 to 4. Download CSVs from *Detailed results*.
+The **Instructor Dashboard** aggregates submissions live and allows CSV download.
 
-Suggested timing per activity: 1 to 2 minutes to complete, 1 minute to predict, 3 to 5 minutes to debrief.
-For the service desk, tell students to stop when the countdown ends.
-
-Seat note: groups are assigned at random, so neighbours may be in different conditions. Ask students not to
-look at each other's screens until the reveal.
-
-## Setup
+## Run locally
 
 ```bash
 pip install -r requirements.txt
 streamlit run module5_live_experiments.py
 ```
 
-Settings are read from environment variables or `.streamlit/secrets.toml`
-(see `.streamlit/secrets.toml.example`):
+Then open the local URL Streamlit provides.
 
-| Setting | Purpose | Default |
-|---|---|---|
-| `INSTRUCTOR_CODE` | Instructor tab password | `northstar` (change it) |
-| `ID_SALT` | Private salt for hashing student codes. Keep it secret and never change it mid-term | built-in default (change it) |
-| `DATABASE_URL` | Postgres connection string for persistent storage | local SQLite |
-| `SESSION_CODE` | Initial session code (can be changed in the app) | `class-1` |
-| `EXP1_SECONDS` | Service-desk time limit | `90` |
+## Instructor code
 
-### Persistent storage on Streamlit Community Cloud
+The default dashboard code is:
 
-1. Create a free Postgres database (e.g., Supabase or Neon) and copy its connection string.
-   `postgres://` and `postgresql://` URLs both work.
-2. In Streamlit Cloud: **Manage app → Settings → Secrets**, paste the contents of `secrets.toml.example`
-   with your values.
-3. Reboot the app. The instructor tab no longer shows the SQLite warning.
+`northstar`
 
-Do not commit `northstar_experiments.db` or `secrets.toml` (both are in `.gitignore`).
+For class use, set your own code before launching:
 
-## Privacy
+macOS/Linux:
+```bash
+export INSTRUCTOR_CODE="your-code"
+streamlit run module5_live_experiments.py
+```
 
-Student codes are never stored, only a salted hash. Student numbers are short, so the hash is only as private
-as `ID_SALT`. If you plan to publish anything from pooled data, get research ethics approval before collecting it.
+Windows PowerShell:
+```powershell
+$env:INSTRUCTOR_CODE="your-code"
+streamlit run module5_live_experiments.py
+```
+
+## Suggested classroom timing
+
+### Experiment 1
+- 1 minute: explain the four triage rules
+- 90 seconds–2 minutes: students work through 8 cases
+- 1 minute: submit
+- 5–7 minutes: reveal and debrief
+
+Do **not** reveal the scoring logic across arms before the activity beyond what each student sees on their own screen.
+
+### Experiment 2
+- Tell half the class to select **Group A** and half **Group B**. Students see neutral group names, not "Opt-In/Opt-Out", so the label does not prime them. The group locks once the student presses Start.
+- 1 minute: ask students to make the purchase decision silently
+- 1 minute: submit
+- 3–5 minutes: reveal opt-in vs opt-out adoption rates
+- Debrief: default effects, inertia, implied recommendation, trust, ethics
 
 ## Data
 
-Tables: `framing`, `incentives`, `defaults`, `finish`, `predictions`, `assignments`, `settings`. Every activity
-row includes `session`, `participant_id` and `arm`. The v1 tables (`exp1` to `exp4`) are not used and are left
-untouched if present.
+Results are stored in a local SQLite database named:
+
+`northstar_experiments.db`
+
+The database is created automatically in the same folder as the app.
+
+For a one-class session, local SQLite is adequate. If you deploy to a cloud host that can restart or use ephemeral storage, download the CSVs after class or connect the app to a persistent database.
+
+
+## Turning Experiment 2 into a true margin test
+
+The dashboard lets the instructor enter:
+- net contribution per protection plan; and
+- the customer volume to which the intervention might be scaled.
+
+It then translates the observed adoption-rate difference into an estimated incremental contribution margin. The app explicitly notes that this first-pass estimate does not subtract possible complaint, cancellation, regulatory, or trust costs.
+
+
+## Manual treatment assignment for Experiment 1
+
+Experiment 1 now displays all three treatment options:
+- Control
+- Quantity
+- Balanced
+
+The instructor tells students which treatment to select before they start. A simple approach is to split the class into roughly equal thirds.
+
+The treatment selection locks once the student starts the experiment.
+
+## Where to see the data
+
+Open the **Instructor Results & Data** tab and enter the instructor code.
+
+Default code: `northstar`
+
+The dashboard shows live summaries and provides buttons to download the raw data as CSV.
+
+The underlying submissions are also stored in:
+`northstar_experiments.db`
+
+This database file is created in the same folder where the Streamlit app is running.
+
+
+## Experiment 3: Product Color Preference
+
+Students see the same NorthStar appliance mock-up in four finishes:
+- White
+- Black
+- Silver
+- Navy Blue
+
+The order is randomized across participants to reduce position bias.
+
+Students report:
+- preferred color;
+- purchase likelihood (1–5); and
+- whether they would pay CAD 50 more for their preferred color.
+
+The Instructor Results & Data tab reports class choice shares, average purchase likelihood, and the share willing to pay the premium by selected color.
+
+Students pick a finish by pressing **Choose** under the appliance; the selected card is highlighted and the others dim, so the choice is visible before submitting.
+
+This is mainly a **preference test**, rather than a clean causal experiment. It is useful for design and marketing decisions. To turn it into a causal experiment, the instructor could later randomize a feature such as the color label, price premium, or marketing message.
+
+
+## Experiment 4: Gains vs. Losses (framing)
+
+Same facts, different wording. Group X sees gain frames; Group Y sees loss frames. Group labels are neutral on the student screen and the group locks once the student presses Start.
+
+**Decision 1 (marketing message).** The EcoSeries costs CAD 120 more and saves about CAD 60 a year. Gain frame: "Save about CAD 60 every year." Loss frame: "Stop losing about CAD 60 every year." Layout and colour are identical across arms, so only the wording differs. Outcomes: upgrade rate and rated persuasiveness.
+
+**Decision 2 (risky choice).** A business version of Tversky & Kahneman (1981): 600 customers at risk; a sure plan vs. a 1-in-3 gamble with the same expected outcome, described as customers *retained* (gain) or *lost* (loss). Prediction: risk-averse choices under the gain frame, risk-seeking choices under the loss frame.
+
+Suggested timing: 1 minute to choose, 3–5 minutes to reveal and debrief. The dashboard reports Loss-minus-Gain effects with 95% confidence intervals, plus debrief notes.
+
+Use a different splitting rule than in Experiment 2 (e.g., seat rows vs. birth month) so the same students are not always treated together.
+
+## Database upgrades
+
+On startup the app checks each table's columns. If a table was created by an older version with a different layout, it is renamed to `<table>_archived_<timestamp>` (data kept) and a fresh table is created. This prevents insert errors after updating the app on a host that kept the old `northstar_experiments.db`. Do not commit `northstar_experiments.db` to your repository; add it to `.gitignore`.
